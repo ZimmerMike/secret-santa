@@ -1,95 +1,143 @@
-import Image from "next/image";
+"use client";
+
+import { useState } from "react";
+
 import styles from "./page.module.css";
+import ParticipantsForm from "./ui/participants-form/participants-form";
+import ParticipantsTable from "./ui/table/table";
+import { Participant, Assignment } from "./interfaces/app-interfaces";
+import { Button } from "@mui/material";
+import Image from "next/image";
 
 export default function Home() {
+  const [participants, setParticipants] = useState<Participant[]>([]);
+  const [assignments, setAssignments] = useState<Assignment[]>([]);
+  const available = participants.slice();
+
+  /**
+   * @description Adds a new participant to table.
+   * @param name Name of participant.
+   * @param email Email of participant (This can be used to send emails to every participant and keep the giveaway as secret).
+   * @param familyMembers Array with participant's family members (previously registered) to avoid gifts between family.
+   */
+  function addParticipant(name: string, email: string, familyMembers: Array<string>): void {
+    if (name.trim() !== "" && email.trim() !== "") {
+      const newParticipant: Participant = {
+        name,
+        email,
+        familyMembers,
+        secretSantaHistory: [],
+      };
+
+      setParticipants([...participants, newParticipant]);
+    }
+  }
+
+  /**
+   * @description Assigns secret santa to every participant (If some of the constraints unables the application to assign all participants it shows an alert and only assign the rest of participants).
+   */
+  function assignSecretSanta(): void {
+    const shuffledParticipants = [...participants].sort(() => Math.random() - 0.5);
+    const newAssignments: Assignment[] = [];
+
+    shuffledParticipants.forEach((participant, index) => {
+      const familyMembers = participant.familyMembers ?? [];
+      let receiverIndex = index;
+      let attempts = 0;
+
+      while (
+        receiverIndex === shuffledParticipants.indexOf(participant) ||
+        shuffledParticipants[receiverIndex].secretSantaHistory?.includes(participant.name) ||
+        familyMembers?.includes(shuffledParticipants[receiverIndex].name) ||
+        newAssignments.some(assignment => assignment.receiver === shuffledParticipants[receiverIndex].name)
+      ) {
+        receiverIndex = (receiverIndex + 1) % shuffledParticipants.length;
+        attempts++;
+
+        if (attempts >= shuffledParticipants.length) {
+          alert('No se pueden hacer asignaciones válidas.');
+
+          return;
+        }
+      }
+
+      newAssignments.push({
+        giver: participant.name,
+        receiver: shuffledParticipants[receiverIndex].name
+      });
+    });
+
+    setAssignments(newAssignments);
+  }
+
+  /**
+   * @description Removes a registered participant from the list.
+   * @param index Index of participant to be removed.
+   */
+  function removeParticipant(index: number): void {
+    const updatedParticipants = [...participants];
+    updatedParticipants.splice(index, 1);
+    setParticipants(updatedParticipants);
+  }
+
   return (
     <main className={styles.main}>
-      <div className={styles.description}>
-        <p>
-          Get started by editing&nbsp;
-          <code className={styles.code}>src/app/page.tsx</code>
-        </p>
-        <div>
-          <a
-            href="https://vercel.com?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            By{" "}
-            <Image
-              src="/vercel.svg"
-              alt="Vercel Logo"
-              className={styles.vercelLogo}
-              width={100}
-              height={24}
-              priority
-            />
-          </a>
-        </div>
-      </div>
-
-      <div className={styles.center}>
+      <header className={styles.header}>
+        <h1 className={styles.title}>SECRET SANTA</h1>
         <Image
-          className={styles.logo}
-          src="/next.svg"
-          alt="Next.js Logo"
-          width={180}
-          height={37}
+          src="/santa.webp"
+          width={200}
+          height={200}
+          alt="Santa claus"
           priority
         />
-      </div>
+      </header>
 
-      <div className={styles.grid}>
-        <a
-          href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Docs <span>-&gt;</span>
-          </h2>
-          <p>Find in-depth information about Next.js features and API.</p>
-        </a>
+      <section className={styles.container}>
+        <ParticipantsForm
+          participants={participants}
+          onAddParticipant={addParticipant}
+        />
+      </section>
 
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Learn <span>-&gt;</span>
-          </h2>
-          <p>Learn about Next.js in an interactive course with&nbsp;quizzes!</p>
-        </a>
+      <section className={styles.container}>
+        {participants.length > 0 ? (
+          <ParticipantsTable
+            participants={participants}
+            onRemoveParticipant={removeParticipant}
+          />
+        ) : null}
+      </section>
 
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Templates <span>-&gt;</span>
-          </h2>
-          <p>Explore starter templates for Next.js.</p>
-        </a>
-
-        <a
-          href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Deploy <span>-&gt;</span>
-          </h2>
-          <p>
-            Instantly deploy your Next.js site to a shareable URL with Vercel.
-          </p>
-        </a>
-      </div>
+      <Button
+        className={styles.startBtn}
+        onClick={assignSecretSanta}
+        variant="contained"
+      >
+        Comenzar rifa
+      </Button>
+      {/* Tabla para mostrar las asignaciones de Secret Santa */}
+      {assignments.length > 0 && (
+        <div>
+          <h3>Assignments:</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>Giver</th>
+                <th>Receiver</th>
+              </tr>
+            </thead>
+            <tbody>
+              {assignments.map((assignment, index) => (
+                <tr key={index}>
+                  <td>{assignment.giver}</td>
+                  <td>{assignment.receiver}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </main>
   );
 }

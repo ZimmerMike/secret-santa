@@ -1,0 +1,25 @@
+.container {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.card {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-around;
+    gap: 20px;
+    flex-wrap: wrap;
+    width: 80%;
+    padding: 3rem;
+}
+
+.errorMsgContainer {
+    color: red;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    padding-top: 1em;
+    gap: 1em;
+}
