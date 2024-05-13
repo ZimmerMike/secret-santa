@@ -5,13 +5,6 @@ import { DeleteOutline } from "@mui/icons-material";
 import styles from './table.module.css'
 import { red } from "@mui/material/colors";
 
-function createData(
-  name: string,
-  email: string
-) {
-  return { name, email };
-}
-
 export default function ParticipantsTable({ participants, onRemoveParticipant }: ParticipantTableProps) {
   return (
     <TableContainer component={Paper} className={styles.table}>

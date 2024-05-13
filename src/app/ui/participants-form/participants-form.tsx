@@ -13,9 +13,10 @@ export default function ParticipantsForm({ onAddParticipant, participants }: Par
   const [familyMemberNames, setFamilyMemberNames] = useState<string[]>([]);
   const [errorMessage, setErrorMessage] = useState<string>('');
 
+  /**
+   * @description Adds new participant to list, validates and updates the registered participants
+   */
   function addParticipant(): void {
-
-    // Verificar si el participante ya está registrado por su correo electrónico
     if (participants.some((participant) => participant.email === email)) {
       setErrorMessage('El participante ya está registrado.');
       return;
@@ -48,6 +49,7 @@ export default function ParticipantsForm({ onAddParticipant, participants }: Par
       <Card className={styles.card}>
         <TextField
           type='text'
+          required
           variant='outlined'
           label='Nombre'
           value={name}
@@ -57,6 +59,7 @@ export default function ParticipantsForm({ onAddParticipant, participants }: Par
         {/* TODO: Arreglar validacion de campo tipo email */}
         <TextField
           type='email'
+          required
           variant='outlined'
           label='Email'
           value={email}
@@ -71,8 +74,9 @@ export default function ParticipantsForm({ onAddParticipant, participants }: Par
             labelId='family-members-selector-label'
             id='demo-multiple-checkbox'
             multiple
+            disabled={!(participants.length > 0)}
             value={familyMemberNames}
-            onChange={(e) => setFamilyMemberNames(e.target.value as string[])}
+            onChange={(e) => setFamilyMemberNames(e.target.value as Array<string>)}
             renderValue={(selected) => (selected as string[]).join(', ')}
             input={<OutlinedInput label='Familiares directos' />}
           >
@@ -87,10 +91,10 @@ export default function ParticipantsForm({ onAddParticipant, participants }: Par
           </Select>
         </FormControl>
         <Button
+          disabled={!(name && email)}
           onClick={addParticipant}
           variant='outlined'
-          sx={{ width: '250px' }}
-        >
+          sx={{ width: '250px' }}>
           Añadir Participante
         </Button>
       </Card>

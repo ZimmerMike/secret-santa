@@ -113,7 +113,7 @@ export default function Home() {
         className={styles.startBtn}
         onClick={assignSecretSanta}
         variant="contained"
-      >
+        disabled={participants.length < 4}>
         Comenzar rifa
       </Button>
       {/* Tabla para mostrar las asignaciones de Secret Santa */}
