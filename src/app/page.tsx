@@ -1,18 +1,19 @@
 "use client";
 
+import Image from "next/image";
 import { useState } from "react";
 
-import styles from "./page.module.css";
+import { Participant, Assignment } from "./interfaces/app-interfaces";
 import ParticipantsForm from "./ui/participants-form/participants-form";
 import ParticipantsTable from "./ui/table/table";
-import { Participant, Assignment } from "./interfaces/app-interfaces";
+import { sendEmail } from "./services/mail.service";
+import styles from "./page.module.css";
+
 import { Button } from "@mui/material";
-import Image from "next/image";
 
 export default function Home() {
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [assignments, setAssignments] = useState<Assignment[]>([]);
-  const available = participants.slice();
 
   /**
    * @description Adds a new participant to table.
@@ -36,7 +37,7 @@ export default function Home() {
   /**
    * @description Assigns secret santa to every participant (If some of the constraints unables the application to assign all participants it shows an alert and only assign the rest of participants).
    */
-  function assignSecretSanta(): void {
+  async function assignSecretSanta(): Promise<void> {
     const shuffledParticipants = [...participants].sort(() => Math.random() - 0.5);
     const newAssignments: Assignment[] = [];
 
@@ -45,28 +46,33 @@ export default function Home() {
       let receiverIndex = index;
       let attempts = 0;
 
-      while (
-        receiverIndex === shuffledParticipants.indexOf(participant) ||
-        shuffledParticipants[receiverIndex].secretSantaHistory?.includes(participant.name) ||
-        familyMembers?.includes(shuffledParticipants[receiverIndex].name) ||
-        newAssignments.some(assignment => assignment.receiver === shuffledParticipants[receiverIndex].name)
-      ) {
+      while (true) {
+        const isSelf = receiverIndex === shuffledParticipants.indexOf(participant);
+        const isFamily = familyMembers.includes(shuffledParticipants[receiverIndex].name);
+        const isAlreadyAssigned = newAssignments.some(assignment => assignment.receiverName === shuffledParticipants[receiverIndex].name);
+        const isInHistory = shuffledParticipants[receiverIndex].secretSantaHistory?.slice(-3).includes(participant.name);
+
+        if (!isSelf && !isFamily && !isAlreadyAssigned && !isInHistory) {
+          break;
+        }
+
         receiverIndex = (receiverIndex + 1) % shuffledParticipants.length;
         attempts++;
 
         if (attempts >= shuffledParticipants.length) {
-          alert('No se pueden hacer asignaciones válidas.');
-
+          alert('No se pueden hacer asignaciones porque para algunos participantes no se cumple ninguna de las condiciones.');
           return;
         }
       }
 
       newAssignments.push({
-        giver: participant.name,
-        receiver: shuffledParticipants[receiverIndex].name
+        giver: participant,
+        receiverName: shuffledParticipants[receiverIndex].name
       });
     });
-
+    for (const assignment of newAssignments) {
+      await sendEmail(assignment.giver, assignment.receiverName);
+    }
     setAssignments(newAssignments);
   }
 
@@ -116,7 +122,7 @@ export default function Home() {
         disabled={participants.length < 4}>
         Comenzar rifa
       </Button>
-      {/* Tabla para mostrar las asignaciones de Secret Santa */}
+      {/* Tabla para mostrar las asignaciones de Secret Santa (solo puesta para ver los resultados al momento) */}
       {assignments.length > 0 && (
         <div>
           <h3>Assignments:</h3>
@@ -130,8 +136,8 @@ export default function Home() {
             <tbody>
               {assignments.map((assignment, index) => (
                 <tr key={index}>
-                  <td>{assignment.giver}</td>
-                  <td>{assignment.receiver}</td>
+                  <td>{assignment.giver.name}</td>
+                  <td>{assignment.receiverName}</td>
                 </tr>
               ))}
             </tbody>

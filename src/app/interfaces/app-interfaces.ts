@@ -16,6 +16,6 @@ export interface ParticipantTableProps {
 }
 
 export interface Assignment {
-  giver: string;
-  receiver: string;
+  giver: Participant;
+  receiverName: string;
 }
